@@ -1,5 +1,5 @@
 --
--- tmanning
+-- lol
 --
 
 cr3_proto = Proto("cr3","Crimson v3")
@@ -8,15 +8,19 @@ cr3_proto = Proto("cr3","Crimson v3")
 -- looks like lua structs is what I should use here
 local pf_zero = ProtoField.uint8("cr3.zero", "Zero", base.HEX)
 local pf_payload_length = ProtoField.uint8("cr3.len", "Length", base.HEX)
-local pf_reg = ProtoField.uint8("cr3.reg", "Register number", base.HEX)
+local pf_reg = ProtoField.uint16("cr3.reg", "Register number", base.HEX)
 local pf_payload = ProtoField.bytes("cr2.payload", "Payload")
+local ptype = ProtoField.uint16("cr3.payload.type", "Type", base.HEX)
+local pzero = ProtoField.uint32("cr3.payload.zero", "Type", base.HEX)
 
 -- example I followed said not to do the fields like this, risk of missing some
 cr3_proto.fields = {
 	pf_zero,
 	pf_payload_length,
 	pf_reg,
-	pf_payload
+	pf_payload,
+	ptype,
+	pzero
 }
 
 function cr3_proto.dissector(tvbuf,pinfo,tree)
@@ -30,19 +34,30 @@ function cr3_proto.dissector(tvbuf,pinfo,tree)
 	local subtree = tree:add(cr3_proto, tvbuf:range(0, pktlen))
 
 	-- setup fields in the proper order and width
-	subtree:add(pf_zero,tvbuf(0,1))
-	subtree:add(pf_payload_length,tvbuf(1,1))
-	subtree:add(pf_reg, tvbuf(2,2))
+	local offset = 0
+	subtree:add(pf_zero,tvbuf(offset,1))
+	offset = offset + 1
+
+	subtree:add(pf_payload_length,tvbuf(offset,1))
+	offset = offset + 1
+
+	subtree:add(pf_reg, tvbuf(offset,2))
+	offset = offset + 2
 
 	-- payload gets broken out
 	-- this pattern feels buggy
-	local payloadtree = subtree:add("Payload", tvbuf:range(4, pktlen - 4))
-	payloadtree:add(pf_payload, tvbuf(4)):append_text(string.format(" (0x%02x bytes)", tvbuf:reported_length_remaining() - 4))
+	local payloadtree = subtree:add(pf_payload, tvbuf:range(offset, pktlen - offset))
+	payloadtree:append_text(string.format(" (0x%02x bytes)", tvbuf:reported_length_remaining() - 4))
 
-	
+	payloadtree:add(ptype, tvbuf(offset, 2))
+	local packettype = tvbuf:range(offset, 2):uint()
+	offset = offset + 2
 
+	-- setting CR3 summary data into the info column in the UI
+	pinfo.cols.info = string.format("Type: %04x", packettype)
 end
--- load the udp.port table
+
+-- load the tcp.port table
 tcp_table = DissectorTable.get("tcp.port")
--- register our protocol to handle udp port 7777
+-- register our protocol tcp:789
 tcp_table:add(789,cr3_proto)
