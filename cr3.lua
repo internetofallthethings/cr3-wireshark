@@ -98,7 +98,7 @@ function dissect_cr3(tvbuf,pinfo,tree,cr3len)
 	end
 
 	-- setting CR3 summary data into the info column in the UI
-	pinfo.cols.info = string.format("Register: %04x, Type: 0x%04x, Bytes: 0x%04x", reg, packettype, cr3len + 2)
+	pinfo.cols.info = string.format("Register: 0x%04x, Type: 0x%04x, Bytes: 0x%04x", reg, packettype, cr3len + 2)
 
 	return
 end
