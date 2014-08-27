@@ -1,5 +1,5 @@
 --
--- lol
+-- thoughtleader@internetofallthethings.com
 --
 
 cr3_proto = Proto("cr3","Crimson v3")
