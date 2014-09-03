@@ -132,7 +132,10 @@ function dissect_cr3(tvbuf,pinfo,tree,cr3len)
 	-- packettype 0x0100
 	if packettype == 0x0100 then
 		-- no data
+		return
 	elseif packettype == 0x0200 then
+		-- no data
+		return
 	elseif packettype == 0x0300 then
 	
 		if (reg == 0x012a or reg == 0x012b) then
@@ -143,6 +146,7 @@ function dissect_cr3(tvbuf,pinfo,tree,cr3len)
 			payloadtree:add(pdata,data)
 		end
 
+		return
 	elseif packettype == 0x1000 or packettype == 0x1600 then
 		-- 16 byte read
 		if not crlen == 0x14 then
@@ -152,6 +156,8 @@ function dissect_cr3(tvbuf,pinfo,tree,cr3len)
 
 		local data = tvbuf:range(offset)
 		payloadtree:add(pdata,data)
+
+		return
 	elseif packettype == 0x1100 then
 		if not(cr3len > 4) then
 			print(string.format("subtype 0x%04x, length violates assumption", packettype))
@@ -161,6 +167,7 @@ function dissect_cr3(tvbuf,pinfo,tree,cr3len)
 		local data = tvbuf:range(offset)
 		payloadtree:add(pdata, data)
 
+		return
 	elseif packettype == 0x1300 or packettype == 0x1400 then
 		-- sequence
 		-- type 
@@ -181,6 +188,7 @@ function dissect_cr3(tvbuf,pinfo,tree,cr3len)
 		payloadtree:add(p_1300_subtype,subtype)
 		payloadtree:add(p_1300_value,value)
 		
+		return
 	elseif packettype == 0x1200 or packettype == 0x1202 or packettype == 0x1500 then
 
 		if not(cr3len > 4) then
@@ -201,12 +209,16 @@ function dissect_cr3(tvbuf,pinfo,tree,cr3len)
 		payloadtree:add(p_1500_chunklength, chunklength)
 		payloadtree:add(p_1500_chunkdata, chunkdata)
 
+		return
 	elseif packettype == 0x1700 then
 		-- seems to always read 0x7530 (30000)
 		local value = tvbuf(offset,4):uint()
 		payloadtree:add(p_1700_value, value)
+
+		return
 	elseif packettype == 0x1800 then
 		-- no read
+		return
 	elseif packettype == 0x1a00 then
 
 		if cr3len > 4 then
@@ -214,6 +226,7 @@ function dissect_cr3(tvbuf,pinfo,tree,cr3len)
 			payloadtree:add(pdata, data)
 		end
 
+		return
 	elseif packettype == 0x1b00 then
 		if cr3len < 0x0c then
 			print(string.format("subtype 0x%04x, length violates assumption", packettype))
@@ -227,20 +240,25 @@ function dissect_cr3(tvbuf,pinfo,tree,cr3len)
 		local readlength = tvbuf(offset,2):uint() 
 		offset = offset + 2
 		
-		payloadtree:add(p_1b00_zero, readoffset)
+		payloadtree:add(p_1b00_zero, zero)
 		payloadtree:add(p_1b00_readoffset, readoffset)
 		payloadtree:add(p_1b00_readlength, readlength)
 
+		return
 	elseif packettype == 0x1c00 then
 		-- no read
+		return
 	elseif packettype == 0x1e00 then
 		-- one byte
 		local data = tvbuf:range(offset)
 		payloadtree:add(pdata, data)
+		return
 	elseif packettype == 0x1f00 then
 		-- no read
+		return
 	elseif packettype == 0x2e00 then
 		-- no read
+		return
 	else
 		print(string.format("Unknown packettype 0x%04x", packettype))
 		return
